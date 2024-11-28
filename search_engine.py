@@ -1,15 +1,13 @@
-import math, json
-
 import json
 import math
-
+import os, glob
 from bs4 import BeautifulSoup
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import regex as re
 import collections
 import nltk
-nltk.download('stopwords')
+#nltk.download('stopwords')
 
 stops = set(stopwords.words('english'))
 
@@ -18,9 +16,9 @@ headings_list = []
 def simpleTokenizor(text):
     global headings_list
     soup = BeautifulSoup(text, 'html.parser')
-    paragraphs = soup.find_all('p')
-    headings = soup.find_all(re.compile('^h[1]$'))
-    headings_list.append(headings)
+    paragraphs = soup.find("title")
+    #headings = soup.find_all(re.compile('^h[1]$'))
+    #headings_list.append(headings)
     #print (headings)
     cleanedTokens = []
     for p in paragraphs:
@@ -31,7 +29,7 @@ def simpleTokenizor(text):
         #print(tokens)
         for token in tokens:
             if token not in stops and token != "," and token != " ":
-                cleanedTokens.append(token)
+                cleanedTokens.append(token.lower())
         freq = collections.Counter(cleanedTokens)
     return freq
 
@@ -44,15 +42,21 @@ vocab = {}
 docIDs = {}
 postings = {}
 htmltexts = {}
-
-for fname in "videogames":
-    f = open(fname, "r", encoding='utf-8')
+file_paths = []
+direct = r"C:\Users\Laurence Beven\OneDrive\IREngine\Video-Game-Search-Engine\videogames"
+for root, dirs, files in os.walk(direct):
+    for fname in files:
+        file_paths.append(os.path.join(root, fname))
+for html_file in file_paths:
+    f = open(html_file, "r", encoding='utf-8')
     text = f.read()
     f.close()
-    
-    docIDs[docIDsCounter] = fname
+
+
+    docIDs[docIDsCounter] = html_file
     htmltexts[docIDsCounter] = text
     tokens = set(simpleTokenizor(text))
+    #print(tokens)
 
     for t in tokens:
         if t in vocab.keys(): 
@@ -69,11 +73,12 @@ for fname in "videogames":
             
         
     docIDsCounter += 1
-cleaned_HTML_headings = []
-for h in headings_list:
-    cleaned_headings = h[0].get_text()
-    cleaned_HTML_headings.append(cleaned_headings)
-print(cleaned_HTML_headings)
+
+# cleaned_HTML_headings = []
+# for h in headings_list:
+#     cleaned_headings = h[0].get_text()
+#     cleaned_HTML_headings.append(cleaned_headings)
+# print(cleaned_HTML_headings)
 
 with open('vocab.txt', 'w') as f: json.dump(vocab, f)
 with open('postings.txt', 'w') as f: json.dump(postings, f)
@@ -147,11 +152,24 @@ while True:  #loop for user query
 
     print("TF-IDF score for each document:", tfidfForEachDoc)
     print("Total TF-IDF score for the query across all documents:", sum(tfidfForEachDoc))
+    final_string = []
+    test_list = []
+    together = {}
+    for last in final_tf.keys():
+        final_string.append(last)
+        for final in final_string:
+            final = os.path.basename(final)
+        test_list.append(final)
 
-    final_ranking = final_tf
-    
-    for i, dic_key in enumerate(final_ranking.keys()):
-        if i < len(tfidfForEachDoc):
-            final_ranking[dic_key] = tfidfForEachDoc[i]
-    print (sorted(final_ranking.items(), key = lambda page: page[1], reverse = True))
+    for key in test_list:
+        for value in tfidfForEachDoc:
+            together[key] = value
+            tfidfForEachDoc.remove(value)
+            break
+
+    print(sorted(together.items(), key = lambda x:x[1], reverse = True))
+            # for i, dic_key in enumerate(final):
+            #     if i < len(tfidfForEachDoc):
+            #         final[dic_key] = tfidfForEachDoc[i]
+
 # tfidf = log(n/dft)*freq per dictionary entry = tfidf score for each document, and then sort them from highest to lowest when displaying page results.
